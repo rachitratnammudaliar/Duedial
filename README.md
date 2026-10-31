@@ -74,7 +74,7 @@ Kotlin · Jetpack Compose · Material 3 · Room · WorkManager
 |---|---|
 | Tests | Unit tests cover the payment-date maths, totals, money parsing, brand matching and backups |
 | Builds | Every push is tested and built by GitHub Actions; the build checks the APK has no internet permission |
-| Releases | Pushing a tag like `v1.0.0` publishes the APK to Releases automatically |
+| Releases | Raising the number in `version.txt` publishes a new release with the APK automatically |
 | Screenshots | Taken by a robot: GitHub Actions boots an Android emulator, opens the app with sample data and saves these images |
 
 ```

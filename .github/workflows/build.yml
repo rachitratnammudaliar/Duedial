@@ -3,7 +3,6 @@ name: Build
 on:
   push:
     branches: [main]
-    tags: ["v*"]
   pull_request:
   workflow_dispatch:
 
@@ -26,11 +25,18 @@ jobs:
 
       - name: Version
         id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-            echo "name=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          VERSION=$(tr -d '[:space:]' < version.txt)
+          echo "name=$VERSION" >> "$GITHUB_OUTPUT"
+          # Publish only from main, and only once per version number.
+          if [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/main" ]] \
+             && ! gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+            echo "Version $VERSION hasn't been released yet; it will be published."
           else
-            echo "name=0.0.${GITHUB_RUN_NUMBER}-dev" >> "$GITHUB_OUTPUT"
+            echo "publish=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Signing key
@@ -72,9 +78,21 @@ jobs:
           name: Renewly-${{ steps.version.outputs.name }}
           path: dist/*.apk
 
+      - name: Release notes
+        if: steps.version.outputs.publish == 'true'
+        run: |
+          VERSION=${{ steps.version.outputs.name }}
+          awk -v v="## $VERSION" '$0==v{f=1;next} /^## /{f=0} f' CHANGELOG.md > notes.md
+          printf '\n**Install:** download the APK below on your Android phone and open it. See the README for Samsung tips.\n' >> notes.md
+          cat notes.md
+
       - name: Publish release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: steps.version.outputs.publish == 'true'
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ steps.version.outputs.name }}
+          name: Renewly ${{ steps.version.outputs.name }}
+          target_commitish: ${{ github.sha }}
+          body_path: notes.md
           files: dist/*.apk
-          generate_release_notes: true
+          make_latest: true
