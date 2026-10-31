@@ -1,0 +1,129 @@
+package com.rachitratnammudaliar.renewly.reminders
+
+import android.Manifest
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
+import androidx.work.CoroutineWorker
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.WorkerParameters
+import com.rachitratnammudaliar.renewly.MainActivity
+import com.rachitratnammudaliar.renewly.R
+import com.rachitratnammudaliar.renewly.data.AppDatabase
+import com.rachitratnammudaliar.renewly.data.Subscription
+import com.rachitratnammudaliar.renewly.data.nextRenewal
+import com.rachitratnammudaliar.renewly.domain.Money
+import com.rachitratnammudaliar.renewly.domain.Renewals
+import java.time.Duration
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.util.concurrent.TimeUnit
+
+/** Renewal reminders. Everything runs on the phone; no internet is used. */
+object Reminders {
+
+    private const val CHANNEL_ID = "renewals"
+    private const val WORK_NAME = "renewly-daily-check"
+    private const val TEST_ID = 999_999
+
+    fun createChannel(context: Context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                "Renewal reminders",
+                NotificationManager.IMPORTANCE_DEFAULT,
+            ).apply { description = "Reminders before a subscription renews" }
+            context.getSystemService(NotificationManager::class.java)?.createNotificationChannel(channel)
+        }
+    }
+
+    /** Runs the daily check at about 9:00 every morning. */
+    fun schedule(context: Context) {
+        val now = LocalDateTime.now()
+        var next = now.toLocalDate().atTime(LocalTime.of(9, 0))
+        if (!next.isAfter(now)) next = next.plusDays(1)
+        val delayMinutes = Duration.between(now, next).toMinutes().coerceAtLeast(1)
+
+        val request = PeriodicWorkRequestBuilder<ReminderWorker>(1, TimeUnit.DAYS)
+            .setInitialDelay(delayMinutes, TimeUnit.MINUTES)
+            .build()
+        WorkManager.getInstance(context)
+            .enqueueUniquePeriodicWork(WORK_NAME, ExistingPeriodicWorkPolicy.UPDATE, request)
+    }
+
+    fun canNotify(context: Context): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            return false
+        }
+        return NotificationManagerCompat.from(context).areNotificationsEnabled()
+    }
+
+    /** Should [s] be announced today? On the reminder day, and on the renewal day itself. */
+    fun isDue(s: Subscription, today: LocalDate): Boolean {
+        if (!s.active) return false
+        val days = Renewals.daysUntil(today, s.nextRenewal(today))
+        return days == s.remindDaysBefore.toLong() || days == 0L
+    }
+
+    fun notifyRenewal(context: Context, s: Subscription, today: LocalDate) {
+        val date = s.nextRenewal(today)
+        val days = Renewals.daysUntil(today, date)
+        val title = if (s.nickname.isNotBlank()) "${s.name} (${s.nickname})" else s.name
+        val text = "Renews ${Renewals.relativeLabel(days)}, " +
+            date.format(DateTimeFormatter.ofPattern("d MMM")) + " · " +
+            Money.format(s.amountMinor, s.currency)
+        show(context, s.id.toInt(), title, text)
+    }
+
+    fun showTest(context: Context) {
+        show(context, TEST_ID, "Renewly reminders are on", "You'll get a notice like this before each renewal.")
+    }
+
+    private fun show(context: Context, id: Int, title: String, text: String) {
+        if (!canNotify(context)) return
+        val open = PendingIntent.getActivity(
+            context,
+            0,
+            Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(title)
+            .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            .setContentIntent(open)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .build()
+        try {
+            NotificationManagerCompat.from(context).notify(id, notification)
+        } catch (e: SecurityException) {
+            // Permission was revoked between the check and the call. Nothing to do.
+        }
+    }
+}
+
+class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
+    override suspend fun doWork(): Result {
+        val today = LocalDate.now()
+        val all = AppDatabase.get(applicationContext).subscriptions().getAll()
+        all.filter { Reminders.isDue(it, today) }
+            .forEach { Reminders.notifyRenewal(applicationContext, it, today) }
+        return Result.success()
+    }
+}

@@ -1,0 +1,80 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Version
+        id: version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "name=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=0.0.${GITHUB_RUN_NUMBER}-dev" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.RENEWLY_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/renewly.jks"
+            echo "RENEWLY_KEYSTORE_PATH=$RUNNER_TEMP/renewly.jks" >> "$GITHUB_ENV"
+            echo "Release key found."
+          else
+            echo "::warning::No release key secret set. The APK is signed with a temporary debug key."
+          fi
+
+      - name: Test and build
+        env:
+          RENEWLY_VERSION_CODE: ${{ github.run_number }}
+          RENEWLY_VERSION_NAME: ${{ steps.version.outputs.name }}
+          RENEWLY_KEYSTORE_PASSWORD: ${{ secrets.RENEWLY_KEYSTORE_PASSWORD }}
+          RENEWLY_KEY_ALIAS: ${{ secrets.RENEWLY_KEY_ALIAS }}
+          RENEWLY_KEY_PASSWORD: ${{ secrets.RENEWLY_KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon testDebugUnitTest assembleRelease
+          mkdir -p dist
+          cp app/build/outputs/apk/release/app-release.apk "dist/Renewly-${{ steps.version.outputs.name }}.apk"
+
+      - name: Check there is no internet permission
+        run: |
+          AAPT=$(ls "$ANDROID_HOME"/build-tools/*/aapt2 | sort -V | tail -1)
+          "$AAPT" dump permissions dist/*.apk | tee permissions.txt
+          if grep -q "android.permission.INTERNET" permissions.txt; then
+            echo "::error::The APK asks for internet access, but Renewly must stay offline."
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Renewly-${{ steps.version.outputs.name }}
+          path: dist/*.apk
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.apk
+          generate_release_notes: true
