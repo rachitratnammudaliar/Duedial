@@ -11,7 +11,9 @@ import androidx.room.Query
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.Update
-import com.rachitratnammudaliar.renewly.domain.BillingCycle
+import com.rachitratnammudaliar.renewly.domain.BillingPeriod
+import com.rachitratnammudaliar.renewly.domain.Category
+import com.rachitratnammudaliar.renewly.domain.PeriodUnit
 import com.rachitratnammudaliar.renewly.domain.Renewals
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
@@ -27,22 +29,38 @@ data class Subscription(
     val nickname: String = "",
     val amountMinor: Long,
     val currency: String = "INR",
-    val cycle: String = BillingCycle.MONTHLY.name,
+    val periodCount: Int = 1,
+    val periodUnit: String = PeriodUnit.MONTH.name,
     val firstPaymentEpochDay: Long,
+    val category: String = Category.OTHER.name,
     val cardNickname: String = "",
     val cardLast4: String = "",
     val remindDaysBefore: Int = 1,
     val notes: String = "",
+    /** File name of a custom icon in the app's private storage, or empty. */
+    val iconFile: String = "",
     val active: Boolean = true,
     val createdAt: Long = System.currentTimeMillis(),
 )
 
-fun Subscription.billingCycle(): BillingCycle = BillingCycle.fromName(cycle)
+fun Subscription.period(): BillingPeriod = BillingPeriod.of(periodCount, periodUnit)
+
+fun Subscription.categoryValue(): Category = Category.fromName(category)
 
 fun Subscription.firstPaymentDate(): LocalDate = LocalDate.ofEpochDay(firstPaymentEpochDay)
 
-fun Subscription.nextRenewal(today: LocalDate = LocalDate.now()): LocalDate =
-    Renewals.nextRenewal(firstPaymentDate(), billingCycle(), today)
+fun Subscription.nextRenewal(today: LocalDate): LocalDate =
+    Renewals.nextRenewal(firstPaymentDate(), period(), today)
+
+fun Subscription.previousPayment(today: LocalDate): LocalDate? =
+    Renewals.previousPayment(firstPaymentDate(), period(), today)
+
+fun Subscription.paymentsMade(today: LocalDate): Long =
+    Renewals.paymentsMade(firstPaymentDate(), period(), today)
+
+fun Subscription.monthlyMinor(): Long = Renewals.monthlyEquivalentMinor(amountMinor, period())
+
+fun Subscription.yearlyMinor(): Long = Renewals.yearlyEquivalentMinor(amountMinor, period())
 
 /** "HDFC •••• 1234", "HDFC", "•••• 1234" or "". */
 fun Subscription.cardLabel(): String = when {
@@ -57,8 +75,14 @@ interface SubscriptionDao {
     @Query("SELECT * FROM subscriptions ORDER BY name COLLATE NOCASE")
     fun observeAll(): Flow<List<Subscription>>
 
+    @Query("SELECT * FROM subscriptions WHERE id = :id")
+    fun observe(id: Long): Flow<Subscription?>
+
     @Query("SELECT * FROM subscriptions")
     suspend fun getAll(): List<Subscription>
+
+    @Query("SELECT COUNT(*) FROM subscriptions")
+    suspend fun count(): Int
 
     @Query("SELECT * FROM subscriptions WHERE id = :id")
     suspend fun get(id: Long): Subscription?

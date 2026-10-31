@@ -11,9 +11,14 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // Debug builds only: sample data and a starting screen, used to take screenshots.
+        val demo = BuildConfig.DEBUG && intent.getBooleanExtra("renewly.demo", false)
+        val startScreen = if (BuildConfig.DEBUG) intent.getStringExtra("renewly.screen") ?: "list" else "list"
+
         setContent {
             RenewlyTheme {
-                RenewlyRoot()
+                RenewlyRoot(startScreen = startScreen, demo = demo)
             }
         }
     }

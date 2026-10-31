@@ -5,10 +5,10 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
-// Release signing comes from environment variables (GitHub Actions secrets).
-// Without them, the release build falls back to the debug key so it still builds.
-val keystorePath: String? = System.getenv("RENEWLY_KEYSTORE_PATH")
-val hasReleaseKey = !keystorePath.isNullOrBlank() && file(keystorePath).exists()
+// Release signing: a private key from GitHub Actions secrets if present,
+// otherwise the committed public build key (see signing/README.md).
+val privateKeystorePath: String? = System.getenv("RENEWLY_KEYSTORE_PATH")
+val hasPrivateKey = !privateKeystorePath.isNullOrBlank() && file(privateKeystorePath).exists()
 
 android {
     namespace = "com.rachitratnammudaliar.renewly"
@@ -23,12 +23,17 @@ android {
     }
 
     signingConfigs {
-        if (hasReleaseKey) {
-            create("release") {
-                storeFile = file(keystorePath!!)
+        create("release") {
+            if (hasPrivateKey) {
+                storeFile = file(privateKeystorePath!!)
                 storePassword = System.getenv("RENEWLY_KEYSTORE_PASSWORD")
                 keyAlias = System.getenv("RENEWLY_KEY_ALIAS")
                 keyPassword = System.getenv("RENEWLY_KEY_PASSWORD")
+            } else {
+                storeFile = rootProject.file("signing/public-release.jks")
+                storePassword = "renewly-public"
+                keyAlias = "renewly"
+                keyPassword = "renewly-public"
             }
         }
     }
@@ -36,7 +41,7 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
-            signingConfig = if (hasReleaseKey) signingConfigs.getByName("release") else signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
@@ -49,6 +54,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     lint {
         // Release builds shouldn't fail on style warnings; errors are still reported in CI logs.
@@ -81,4 +87,5 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.9.1")
 
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20240303")
 }

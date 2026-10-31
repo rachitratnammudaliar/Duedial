@@ -72,9 +72,12 @@ object Reminders {
         return NotificationManagerCompat.from(context).areNotificationsEnabled()
     }
 
-    /** Should [s] be announced today? On the reminder day, and on the renewal day itself. */
+    /**
+     * Should [s] be announced today? On the chosen reminder day and on the renewal day itself.
+     * A reminder setting below zero means reminders are off for that subscription.
+     */
     fun isDue(s: Subscription, today: LocalDate): Boolean {
-        if (!s.active) return false
+        if (!s.active || s.remindDaysBefore < 0) return false
         val days = Renewals.daysUntil(today, s.nextRenewal(today))
         return days == s.remindDaysBefore.toLong() || days == 0L
     }
@@ -88,6 +91,18 @@ object Reminders {
             Money.format(s.amountMinor, s.currency)
         show(context, s.id.toInt(), title, text)
     }
+
+    /** Opens Renewly's notification settings. */
+    fun notificationSettingsIntent(context: Context): Intent =
+        Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+            .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+    /** Opens the app's system page, where battery can be set to "Unrestricted" (needed on Samsung). */
+    fun appSettingsIntent(context: Context): Intent =
+        Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+            .setData(android.net.Uri.fromParts("package", context.packageName, null))
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
     fun showTest(context: Context) {
         show(context, TEST_ID, "Renewly reminders are on", "You'll get a notice like this before each renewal.")

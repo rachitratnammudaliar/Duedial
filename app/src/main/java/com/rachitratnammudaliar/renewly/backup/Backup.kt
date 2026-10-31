@@ -1,15 +1,19 @@
 package com.rachitratnammudaliar.renewly.backup
 
 import com.rachitratnammudaliar.renewly.data.Subscription
-import com.rachitratnammudaliar.renewly.domain.BillingCycle
+import com.rachitratnammudaliar.renewly.domain.BillingPeriod
+import com.rachitratnammudaliar.renewly.domain.Category
 import org.json.JSONArray
 import org.json.JSONObject
 
-/** Plain JSON backups, so data can be moved to a new phone without any cloud. */
+/**
+ * Plain JSON backups, so data can be moved to a new phone without any cloud.
+ * Custom icons are not included; they stay on the old phone.
+ */
 object Backup {
 
     private const val FORMAT = "renewly-backup"
-    private const val VERSION = 1
+    private const val VERSION = 2
 
     fun encode(subscriptions: List<Subscription>): String {
         val items = JSONArray()
@@ -20,8 +24,10 @@ object Backup {
                     .put("nickname", s.nickname)
                     .put("amountMinor", s.amountMinor)
                     .put("currency", s.currency)
-                    .put("cycle", s.cycle)
+                    .put("periodCount", s.periodCount)
+                    .put("periodUnit", s.periodUnit)
                     .put("firstPaymentEpochDay", s.firstPaymentEpochDay)
+                    .put("category", s.category)
                     .put("cardNickname", s.cardNickname)
                     .put("cardLast4", s.cardLast4)
                     .put("remindDaysBefore", s.remindDaysBefore)
@@ -48,20 +54,31 @@ object Backup {
             throw IllegalArgumentException("This file isn't a Renewly backup.")
         }
         val items = root.optJSONArray("subscriptions") ?: JSONArray()
-        return (0 until items.length()).map { i ->
-            val o = items.getJSONObject(i)
+        return (0 until items.length()).mapNotNull { i ->
+            val o = items.optJSONObject(i) ?: return@mapNotNull null
+            val name = o.optString("name").trim()
+            val amount = o.optLong("amountMinor", 0L)
+            if (name.isEmpty() || amount <= 0L || !o.has("firstPaymentEpochDay")) return@mapNotNull null
+
+            val period = if (o.has("periodUnit")) {
+                BillingPeriod.of(o.optInt("periodCount", 1), o.optString("periodUnit"))
+            } else {
+                BillingPeriod.fromLegacyCycle(o.optString("cycle"))
+            }
             val last4 = o.optString("cardLast4").filter { it.isDigit() }.take(4)
             Subscription(
-                name = o.getString("name"),
-                nickname = o.optString("nickname"),
-                amountMinor = o.getLong("amountMinor"),
-                currency = o.optString("currency", "INR"),
-                cycle = BillingCycle.fromName(o.optString("cycle")).name,
+                name = name.take(60),
+                nickname = o.optString("nickname").take(60),
+                amountMinor = amount,
+                currency = o.optString("currency", "INR").ifBlank { "INR" },
+                periodCount = period.count,
+                periodUnit = period.unit.name,
                 firstPaymentEpochDay = o.getLong("firstPaymentEpochDay"),
-                cardNickname = o.optString("cardNickname"),
+                category = Category.fromName(o.optString("category")).name,
+                cardNickname = o.optString("cardNickname").take(30),
                 cardLast4 = if (last4.length == 4) last4 else "",
-                remindDaysBefore = o.optInt("remindDaysBefore", 1).coerceIn(0, 30),
-                notes = o.optString("notes"),
+                remindDaysBefore = o.optInt("remindDaysBefore", 1).coerceIn(-1, 30),
+                notes = o.optString("notes").take(500),
                 active = o.optBoolean("active", true),
                 createdAt = o.optLong("createdAt", System.currentTimeMillis()),
             )

@@ -42,7 +42,7 @@ jobs:
             echo "RENEWLY_KEYSTORE_PATH=$RUNNER_TEMP/renewly.jks" >> "$GITHUB_ENV"
             echo "Release key found."
           else
-            echo "::warning::No release key secret set. The APK is signed with a temporary debug key."
+            echo "No private key secret set. Using the committed public build key."
           fi
 
       - name: Test and build
