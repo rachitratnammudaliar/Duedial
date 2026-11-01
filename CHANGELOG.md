@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.1.0
+
+- Plan types: subscription, free trial, free (student offers, free tiers) and lifetime
+- Free trials: reminder before the trial ends with the last day to cancel, and "I cancelled the trial"
+- Free plans: optional end date with a reminder, and the normal price you're saving
+- Lifetime purchases: paid once, never renewed or counted monthly
+- Cancel a subscription but keep it active until the end of the paid period
+- Split the cost between 2 to 6 people; totals use your share
+- Regular price, to see what a discount saves
+- "Count in monthly bill" switch per subscription; longer plans are divided per month
+- Home total is now *Monthly bill* or *Due this month*
+- 2-day reminder option
+- Backups include the new details; older backups still import
+- Existing data is upgraded automatically
+
 ## 1.0.0
 
 First release.

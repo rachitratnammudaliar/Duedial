@@ -67,4 +67,50 @@ class BackupTest {
         assertThrows(IllegalArgumentException::class.java) { Backup.decode("not json") }
         assertThrows(IllegalArgumentException::class.java) { Backup.decode("""{"hello":"world"}""") }
     }
+
+    @Test
+    fun keepsPlanDetails() {
+        val free = Subscription(
+            name = "GitHub Copilot", nickname = "Student", amountMinor = 0, currency = "USD",
+            periodCount = 1, periodUnit = "MONTH", firstPaymentEpochDay = 20_000, category = "SOFTWARE",
+            cardNickname = "", cardLast4 = "", remindDaysBefore = 7, notes = "", iconFile = "",
+            active = true, createdAt = 5, planType = "FREE", endEpochDay = 20_300,
+            includeInMonthly = false, splitCount = 1, regularAmountMinor = 1000,
+        )
+        val shared = free.copy(
+            name = "Spotify Duo", amountMinor = 23900, currency = "INR", planType = "RECURRING",
+            endEpochDay = null, includeInMonthly = true, splitCount = 2, regularAmountMinor = null,
+        )
+        val trial = shared.copy(name = "Hotstar", planType = "TRIAL", endEpochDay = 19_999, splitCount = 1)
+        val yearly = shared.copy(name = "Prime", periodUnit = "YEAR", includeInMonthly = true, splitCount = 1)
+        val list = listOf(free, shared, trial, yearly)
+        assertEquals(list, Backup.decode(Backup.encode(list)))
+    }
+
+    @Test
+    fun olderBackupsGetSensibleDefaults() {
+        val json = """
+            {"format":"renewly-backup","version":2,"subscriptions":[
+              {"name":"Netflix","amountMinor":64900,"periodCount":1,"periodUnit":"MONTH","firstPaymentEpochDay":20000},
+              {"name":"Prime","amountMinor":149900,"periodCount":1,"periodUnit":"YEAR","firstPaymentEpochDay":20000}
+            ]}
+        """.trimIndent()
+        val (netflix, prime) = Backup.decode(json)
+        assertEquals("RECURRING", netflix.planType)
+        assertEquals(true, netflix.includeInMonthly)
+        assertEquals(false, prime.includeInMonthly)
+        assertEquals(null, prime.endEpochDay)
+        assertEquals(1, prime.splitCount)
+    }
+
+    @Test
+    fun freePlansMayHaveNoPriceButPaidOnesMust() {
+        val json = """
+            {"format":"renewly-backup","subscriptions":[
+              {"name":"Free","amountMinor":0,"planType":"FREE","firstPaymentEpochDay":1},
+              {"name":"Paid","amountMinor":0,"planType":"LIFETIME","firstPaymentEpochDay":1}
+            ]}
+        """.trimIndent()
+        assertEquals("Free", Backup.decode(json).single().name)
+    }
 }

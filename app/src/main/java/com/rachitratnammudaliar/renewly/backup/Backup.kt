@@ -3,6 +3,7 @@ package com.rachitratnammudaliar.renewly.backup
 import com.rachitratnammudaliar.renewly.data.Subscription
 import com.rachitratnammudaliar.renewly.domain.BillingPeriod
 import com.rachitratnammudaliar.renewly.domain.Category
+import com.rachitratnammudaliar.renewly.domain.PlanType
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -13,7 +14,7 @@ import org.json.JSONObject
 object Backup {
 
     private const val FORMAT = "renewly-backup"
-    private const val VERSION = 2
+    private const val VERSION = 3
 
     fun encode(subscriptions: List<Subscription>): String {
         val items = JSONArray()
@@ -33,7 +34,12 @@ object Backup {
                     .put("remindDaysBefore", s.remindDaysBefore)
                     .put("notes", s.notes)
                     .put("active", s.active)
-                    .put("createdAt", s.createdAt),
+                    .put("createdAt", s.createdAt)
+                    .put("planType", s.planType)
+                    .put("endEpochDay", s.endEpochDay ?: JSONObject.NULL)
+                    .put("includeInMonthly", s.includeInMonthly)
+                    .put("splitCount", s.splitCount)
+                    .put("regularAmountMinor", s.regularAmountMinor ?: JSONObject.NULL),
             )
         }
         return JSONObject()
@@ -58,7 +64,9 @@ object Backup {
             val o = items.optJSONObject(i) ?: return@mapNotNull null
             val name = o.optString("name").trim()
             val amount = o.optLong("amountMinor", 0L)
-            if (name.isEmpty() || amount <= 0L || !o.has("firstPaymentEpochDay")) return@mapNotNull null
+            val type = PlanType.fromName(o.optString("planType", PlanType.RECURRING.name))
+            val amountOk = if (type == PlanType.FREE) amount >= 0L else amount > 0L
+            if (name.isEmpty() || !amountOk || !o.has("firstPaymentEpochDay")) return@mapNotNull null
 
             val period = if (o.has("periodUnit")) {
                 BillingPeriod.of(o.optInt("periodCount", 1), o.optString("periodUnit"))
@@ -81,6 +89,11 @@ object Backup {
                 notes = o.optString("notes").take(500),
                 active = o.optBoolean("active", true),
                 createdAt = o.optLong("createdAt", System.currentTimeMillis()),
+                planType = type.name,
+                endEpochDay = if (o.isNull("endEpochDay")) null else o.optLong("endEpochDay"),
+                includeInMonthly = o.optBoolean("includeInMonthly", period.isMonthly || period.unit.name in setOf("DAY", "WEEK")),
+                splitCount = o.optInt("splitCount", 1).coerceIn(1, 20),
+                regularAmountMinor = if (o.isNull("regularAmountMinor")) null else o.optLong("regularAmountMinor").takeIf { it > 0 },
             )
         }
     }

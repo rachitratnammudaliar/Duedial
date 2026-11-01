@@ -12,8 +12,11 @@ import com.rachitratnammudaliar.renewly.data.Prefs
 import com.rachitratnammudaliar.renewly.data.SortMode
 import com.rachitratnammudaliar.renewly.data.Subscription
 import com.rachitratnammudaliar.renewly.data.TotalMode
+import com.rachitratnammudaliar.renewly.domain.BillingPeriod
 import com.rachitratnammudaliar.renewly.domain.Category
 import com.rachitratnammudaliar.renewly.domain.PeriodUnit
+import com.rachitratnammudaliar.renewly.domain.PlanType
+import com.rachitratnammudaliar.renewly.domain.Plans
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -105,17 +108,26 @@ class SubscriptionsViewModel(app: Application) : AndroidViewModel(app) {
             fun sub(
                 name: String, amount: Long, currency: String, count: Int, unit: PeriodUnit, first: LocalDate,
                 category: Category, card: String = "", last4: String = "", nickname: String = "", remind: Int = 1,
+                type: PlanType = PlanType.RECURRING, end: LocalDate? = null, include: Boolean? = null,
+                split: Int = 1, regular: Long? = null,
             ) = Subscription(
                 name = name, nickname = nickname, amountMinor = amount, currency = currency,
                 periodCount = count, periodUnit = unit.name, firstPaymentEpochDay = first.toEpochDay(),
                 category = category.name, cardNickname = card, cardLast4 = last4, remindDaysBefore = remind,
+                planType = type.name, endEpochDay = end?.toEpochDay(),
+                includeInMonthly = include ?: Plans.defaultIncludeInMonthly(type, BillingPeriod(count, unit)),
+                splitCount = split, regularAmountMinor = regular,
             )
             dao.insertAll(
                 listOf(
                     sub("Netflix", 64900, "INR", 1, PeriodUnit.MONTH, t.minusMonths(7).plusDays(2), Category.ENTERTAINMENT, "HDFC Visa", "4821", "Premium, family"),
-                    sub("Spotify", 11900, "INR", 1, PeriodUnit.MONTH, t.minusMonths(14).plusDays(9), Category.MUSIC, "HDFC Visa", "4821"),
+                    sub("Spotify", 23900, "INR", 1, PeriodUnit.MONTH, t.minusMonths(14).plusDays(9), Category.MUSIC, "HDFC Visa", "4821", "Duo", split = 2),
                     sub("YouTube Premium", 14900, "INR", 1, PeriodUnit.MONTH, t.minusMonths(3).plusDays(1), Category.ENTERTAINMENT, "UPI"),
-                    sub("Amazon Prime", 149900, "INR", 1, PeriodUnit.YEAR, t.minusMonths(10), Category.ENTERTAINMENT, "ICICI Amazon Pay", "1106", remind = 7),
+                    sub("Amazon Prime", 149900, "INR", 1, PeriodUnit.YEAR, t.minusMonths(10), Category.ENTERTAINMENT, "ICICI Amazon Pay", "1106", remind = 7, include = true),
+                    sub("Disney+ Hotstar", 29900, "INR", 1, PeriodUnit.MONTH, t.plusDays(2), Category.ENTERTAINMENT, "HDFC Visa", "4821", type = PlanType.TRIAL, remind = 2),
+                    sub("GitHub Copilot", 0, "USD", 1, PeriodUnit.MONTH, t.minusMonths(5), Category.SOFTWARE, nickname = "Student pack", type = PlanType.FREE, regular = 1000, end = t.plusMonths(7)),
+                    sub("Notion", 0, "USD", 1, PeriodUnit.MONTH, t.minusMonths(9), Category.SOFTWARE, nickname = "Education plan", type = PlanType.FREE, regular = 1000),
+                    sub("Procreate", 129900, "INR", 1, PeriodUnit.MONTH, t.minusMonths(18), Category.SOFTWARE, "UPI", type = PlanType.LIFETIME, remind = -1),
                     sub("ChatGPT Plus", 2000, "USD", 1, PeriodUnit.MONTH, t.minusMonths(2).plusDays(18), Category.SOFTWARE, "Revolut", "7310"),
                     sub("iCloud+", 7500, "INR", 1, PeriodUnit.MONTH, t.minusMonths(20).plusDays(25), Category.CLOUD, "Apple balance"),
                     sub("Gym membership", 9000, "EUR", 3, PeriodUnit.MONTH, t.minusMonths(2).plusDays(12), Category.FITNESS, "Swedbank", "2290", "Kaunas", remind = 3),

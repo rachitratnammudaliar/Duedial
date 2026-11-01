@@ -11,10 +11,15 @@ import androidx.room.Query
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.Update
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.rachitratnammudaliar.renewly.domain.BillingPeriod
 import com.rachitratnammudaliar.renewly.domain.Category
 import com.rachitratnammudaliar.renewly.domain.PeriodUnit
-import com.rachitratnammudaliar.renewly.domain.Renewals
+import com.rachitratnammudaliar.renewly.domain.Plan
+import com.rachitratnammudaliar.renewly.domain.PlanType
+import com.rachitratnammudaliar.renewly.domain.Plans
+import com.rachitratnammudaliar.renewly.domain.Status
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
 
@@ -41,26 +46,52 @@ data class Subscription(
     val iconFile: String = "",
     val active: Boolean = true,
     val createdAt: Long = System.currentTimeMillis(),
+    // Added in database version 2 (app 1.1.0).
+    val planType: String = PlanType.RECURRING.name,
+    /** Last day it's active (cancelled, fixed-term, or free until). Null if it continues. */
+    val endEpochDay: Long? = null,
+    val includeInMonthly: Boolean = true,
+    /** Number of people sharing the cost; 1 means not shared. */
+    val splitCount: Int = 1,
+    /** The normal price, to show savings from a discount or free offer. */
+    val regularAmountMinor: Long? = null,
 )
+
+fun Subscription.planTypeValue(): PlanType = PlanType.fromName(planType)
+
+fun Subscription.endDate(): LocalDate? = endEpochDay?.let { LocalDate.ofEpochDay(it) }
+
+fun Subscription.toPlan(): Plan = Plan(
+    type = planTypeValue(),
+    amountMinor = amountMinor,
+    period = period(),
+    start = firstPaymentDate(),
+    end = endDate(),
+    split = splitCount.coerceAtLeast(1),
+    includeInMonthly = includeInMonthly,
+    active = active,
+    regularAmountMinor = regularAmountMinor,
+)
+
+fun Subscription.status(today: LocalDate): Status = Plans.status(toPlan(), today)
+
+fun Subscription.nextCharge(today: LocalDate): LocalDate? = Plans.nextCharge(toPlan(), today)
+
+fun Subscription.previousCharge(today: LocalDate): LocalDate? = Plans.previousCharge(toPlan(), today)
+
+fun Subscription.paymentsMade(today: LocalDate): Long = Plans.paymentsMade(toPlan(), today)
+
+fun Subscription.shareMinor(): Long = Plans.shareMinor(toPlan())
+
+fun Subscription.monthlyBillMinor(today: LocalDate): Long = Plans.monthlyBillMinor(toPlan(), today)
+
+fun Subscription.yearlyMinor(today: LocalDate): Long = Plans.yearlyMinor(toPlan(), today)
 
 fun Subscription.period(): BillingPeriod = BillingPeriod.of(periodCount, periodUnit)
 
 fun Subscription.categoryValue(): Category = Category.fromName(category)
 
 fun Subscription.firstPaymentDate(): LocalDate = LocalDate.ofEpochDay(firstPaymentEpochDay)
-
-fun Subscription.nextRenewal(today: LocalDate): LocalDate =
-    Renewals.nextRenewal(firstPaymentDate(), period(), today)
-
-fun Subscription.previousPayment(today: LocalDate): LocalDate? =
-    Renewals.previousPayment(firstPaymentDate(), period(), today)
-
-fun Subscription.paymentsMade(today: LocalDate): Long =
-    Renewals.paymentsMade(firstPaymentDate(), period(), today)
-
-fun Subscription.monthlyMinor(): Long = Renewals.monthlyEquivalentMinor(amountMinor, period())
-
-fun Subscription.yearlyMinor(): Long = Renewals.yearlyEquivalentMinor(amountMinor, period())
 
 /** "HDFC •••• 1234", "HDFC", "•••• 1234" or "". */
 fun Subscription.cardLabel(): String = when {
@@ -100,11 +131,32 @@ interface SubscriptionDao {
     suspend fun delete(subscription: Subscription)
 }
 
-@Database(entities = [Subscription::class], version = 1, exportSchema = false)
+/**
+ * Version 1 -> 2 (app 1.0.0 -> 1.1.0): plan types, end dates, monthly-bill toggle, cost splitting
+ * and regular price. Existing subscriptions stay paid subscriptions; weekly and monthly ones keep
+ * counting in the monthly bill, longer ones don't (the same as 1.0.0's default view).
+ */
+val MIGRATION_1_2 = object : Migration(1, 2) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE subscriptions ADD COLUMN planType TEXT NOT NULL DEFAULT 'RECURRING'")
+        db.execSQL("ALTER TABLE subscriptions ADD COLUMN endEpochDay INTEGER")
+        db.execSQL("ALTER TABLE subscriptions ADD COLUMN includeInMonthly INTEGER NOT NULL DEFAULT 1")
+        db.execSQL("ALTER TABLE subscriptions ADD COLUMN splitCount INTEGER NOT NULL DEFAULT 1")
+        db.execSQL("ALTER TABLE subscriptions ADD COLUMN regularAmountMinor INTEGER")
+        db.execSQL(
+            "UPDATE subscriptions SET includeInMonthly = CASE " +
+                "WHEN periodUnit IN ('DAY', 'WEEK') OR (periodUnit = 'MONTH' AND periodCount = 1) THEN 1 ELSE 0 END",
+        )
+    }
+}
+
+@Database(entities = [Subscription::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun subscriptions(): SubscriptionDao
 
     companion object {
+        const val DATABASE_NAME = "renewly.db"
+
         @Volatile
         private var instance: AppDatabase? = null
 
@@ -113,8 +165,8 @@ abstract class AppDatabase : RoomDatabase() {
                 instance ?: Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
-                    "renewly.db",
-                ).build().also { instance = it }
+                    DATABASE_NAME,
+                ).addMigrations(MIGRATION_1_2).build().also { instance = it }
             }
     }
 }

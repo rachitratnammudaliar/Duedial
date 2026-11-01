@@ -55,11 +55,10 @@ object IconStore {
         file(context, name)?.let { runCatching { BitmapFactory.decodeFile(it.absolutePath) }.getOrNull() }
 }
 
-/** How the "per month" total on the home screen is calculated. */
+/** How the total on the home screen is calculated. */
 enum class TotalMode(val label: String, val description: String) {
-    MONTHLY_ONLY("Monthly plans", "Only subscriptions billed every month"),
-    ALL_AVERAGED("All, per month", "Every subscription, converted to a monthly average"),
-    THIS_MONTH("Due this month", "What's actually charged in this calendar month"),
+    MONTHLY_BILL("Monthly bill", "Subscriptions you count in your bill; longer plans spread across months"),
+    THIS_MONTH("Due this month", "Everything actually charged this calendar month"),
 }
 
 enum class SortMode(val label: String) {
@@ -73,7 +72,7 @@ class Prefs(context: Context) {
     private val prefs = context.getSharedPreferences("renewly", Context.MODE_PRIVATE)
 
     var totalMode: TotalMode
-        get() = TotalMode.entries.firstOrNull { it.name == prefs.getString("total_mode", null) } ?: TotalMode.MONTHLY_ONLY
+        get() = TotalMode.entries.firstOrNull { it.name == prefs.getString("total_mode", null) } ?: TotalMode.MONTHLY_BILL
         set(value) = prefs.edit().putString("total_mode", value.name).apply()
 
     var sortMode: SortMode

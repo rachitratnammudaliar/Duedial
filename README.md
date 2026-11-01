@@ -23,11 +23,22 @@ Requires Android 8.0 or newer. Updates install over the old version and keep you
 
 ## Features
 
+**Every kind of plan**
+| Type | For | How it's counted |
+|---|---|---|
+| **Subscription** | Anything paid on a schedule | Next payment, last payment, paid so far |
+| **Free trial** | Trials that turn into paid plans | Free until the trial ends; a reminder tells you the last day to cancel |
+| **Free** | Student offers, free tiers, gifts | Never charged; optional "free until" date with a reminder and the normal price you're saving |
+| **Lifetime** | One-time purchases | Paid once, never renews, never in the monthly bill |
+
 **Subscriptions**
 - Name, nickname, fee and currency (₹, €, $, £)
 - Any billing period: weekly, monthly, every 3 or 6 months, yearly, or custom (every 10 days, every 2 years, …)
 - **Next payment**, **last payment** and **paid so far**, all worked out from the first payment date
 - Month ends handled correctly: 31 Jan → 28 Feb → 31 Mar
+- **Cancelled but still active**: set an end date and Renewly stops counting payments after it
+- **Shared plans**: split the cost between 2 to 6 people and every total uses your share
+- **Discounts**: add the regular price to see how much you save
 - Payment method: a card nickname and its last 4 digits. Full card numbers are never stored
 - Categories, notes, and pause without deleting
 
@@ -35,17 +46,18 @@ Requires Android 8.0 or newer. Updates install over the old version and keep you
 - Known services (Netflix, Spotify, YouTube, Prime, Hotstar, ChatGPT, iCloud, Jio, Airtel and about 40 more) get their brand colour automatically
 - Use any image from your gallery as a subscription's icon
 
-**Totals**, with three ways to count per month:
+**Totals**
 | Option | What it adds up |
 |---|---|
-| **Monthly plans** (default) | Only subscriptions billed every month |
-| **All, per month** | Every subscription, converted to a monthly average (₹1,499/year counts as ₹125) |
-| **Due this month** | What's actually charged in the current calendar month |
+| **Monthly bill** (default) | Everything switched to *Count in monthly bill*. Longer plans are divided: ₹1,499 a year adds ₹125 a month |
+| **Due this month** | What's actually charged in the current calendar month, whatever the switch says |
 
-Different currencies are shown separately, never added together.
+*Count in monthly bill* is on by default for weekly and monthly plans and off for longer ones; change it per subscription. Trials join the bill only once they become paid. Free and lifetime plans are never in it. Different currencies are shown separately, never added together.
 
 **Reminders**
-- A notification on the day, or 1, 3 or 7 days before, or off for a subscription
+- Before a payment: on the day, or 1, 2, 3 or 7 days before, or off
+- Before a free trial ends, with the last day to cancel
+- Before a free offer ends
 - Checked every morning on the phone, without any internet
 
 **Backup**

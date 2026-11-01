@@ -20,8 +20,12 @@ import com.rachitratnammudaliar.renewly.MainActivity
 import com.rachitratnammudaliar.renewly.R
 import com.rachitratnammudaliar.renewly.data.AppDatabase
 import com.rachitratnammudaliar.renewly.data.Subscription
-import com.rachitratnammudaliar.renewly.data.nextRenewal
+import com.rachitratnammudaliar.renewly.data.shareMinor
+import com.rachitratnammudaliar.renewly.data.toPlan
+import com.rachitratnammudaliar.renewly.domain.EventKind
 import com.rachitratnammudaliar.renewly.domain.Money
+import com.rachitratnammudaliar.renewly.domain.PlanEvent
+import com.rachitratnammudaliar.renewly.domain.Plans
 import com.rachitratnammudaliar.renewly.domain.Renewals
 import java.time.Duration
 import java.time.LocalDate
@@ -72,23 +76,27 @@ object Reminders {
         return NotificationManagerCompat.from(context).areNotificationsEnabled()
     }
 
-    /**
-     * Should [s] be announced today? On the chosen reminder day and on the renewal day itself.
-     * A reminder setting below zero means reminders are off for that subscription.
-     */
-    fun isDue(s: Subscription, today: LocalDate): Boolean {
-        if (!s.active || s.remindDaysBefore < 0) return false
-        val days = Renewals.daysUntil(today, s.nextRenewal(today))
-        return days == s.remindDaysBefore.toLong() || days == 0L
-    }
+    /** The reminder to show today for [s], if any. */
+    fun dueEvent(s: Subscription, today: LocalDate): PlanEvent? =
+        Plans.reminderDue(s.toPlan(), s.remindDaysBefore, today)
 
-    fun notifyRenewal(context: Context, s: Subscription, today: LocalDate) {
-        val date = s.nextRenewal(today)
-        val days = Renewals.daysUntil(today, date)
+    fun notify(context: Context, s: Subscription, event: PlanEvent, today: LocalDate) {
+        val days = Renewals.daysUntil(today, event.date)
+        val day = event.date.format(DateTimeFormatter.ofPattern("d MMM"))
+        val price = Money.format(s.shareMinor(), s.currency)
         val title = if (s.nickname.isNotBlank()) "${s.name} (${s.nickname})" else s.name
-        val text = "Renews ${Renewals.relativeLabel(days)}, " +
-            date.format(DateTimeFormatter.ofPattern("d MMM")) + " · " +
-            Money.format(s.amountMinor, s.currency)
+        val text = when (event.kind) {
+            EventKind.CHARGE ->
+                if (days == 0L) "$price is due today" else "Renews ${Renewals.relativeLabel(days)}, $day · $price"
+            EventKind.TRIAL_ENDS ->
+                if (days == 0L) {
+                    "Free trial ended today. You'll be charged $price unless you've cancelled."
+                } else {
+                    "Free trial ends $day. Cancel by ${event.date.minusDays(1).format(DateTimeFormatter.ofPattern("d MMM"))} to avoid paying $price."
+                }
+            EventKind.FREE_ENDS -> "Free period ends ${Renewals.relativeLabel(days)}, $day"
+            EventKind.SUBSCRIPTION_ENDS -> "Ends ${Renewals.relativeLabel(days)}, $day"
+        }
         show(context, s.id.toInt(), title, text)
     }
 
@@ -137,8 +145,9 @@ class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWork
     override suspend fun doWork(): Result {
         val today = LocalDate.now()
         val all = AppDatabase.get(applicationContext).subscriptions().getAll()
-        all.filter { Reminders.isDue(it, today) }
-            .forEach { Reminders.notifyRenewal(applicationContext, it, today) }
+        all.forEach { s ->
+            Reminders.dueEvent(s, today)?.let { Reminders.notify(applicationContext, s, it, today) }
+        }
         return Result.success()
     }
 }

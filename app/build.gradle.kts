@@ -17,6 +17,7 @@ android {
     defaultConfig {
         applicationId = "com.rachitratnammudaliar.renewly"
         minSdk = 26
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         targetSdk = 34
         versionCode = (System.getenv("RENEWLY_VERSION_CODE") ?: "1").toInt()
         versionName = System.getenv("RENEWLY_VERSION_NAME") ?: "1.0.0"
@@ -88,4 +89,6 @@ dependencies {
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20240303")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test:runner:1.6.2")
 }
