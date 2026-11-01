@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0
+
+- Renewly is now **Duedial**, with a new dial icon
+- Backups made with Renewly import into Duedial
+
+Duedial installs as a new app next to Renewly. To move your data: in Renewly, open Settings → Export, then in Duedial open Settings → Import and pick that file. After that you can uninstall Renewly.
+
 ## 1.1.0
 
 - Plan types: subscription, free trial, free (student offers, free tiers) and lifetime

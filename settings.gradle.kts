@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Renewly"
+rootProject.name = "Duedial"
 include(":app")

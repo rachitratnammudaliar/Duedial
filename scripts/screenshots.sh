@@ -3,7 +3,7 @@
 # Run by .github/workflows/screenshots.yml while an emulator is booted.
 set -euo pipefail
 
-PKG=com.rachitratnammudaliar.renewly
+PKG=com.rachitratnammudaliar.duedial
 OUT=docs/screenshots
 mkdir -p "$OUT"
 
@@ -27,7 +27,7 @@ adb shell am broadcast -a com.android.systemui.demo -e command network -e wifi s
 shot() {
   local screen=$1 name=$2
   adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null 2>&1 || true
-  adb shell am start -S -W -n "$PKG/.MainActivity" --ez renewly.demo true --es renewly.screen "$screen" >/dev/null
+  adb shell am start -S -W -n "$PKG/.MainActivity" --ez duedial.demo true --es duedial.screen "$screen" >/dev/null
   sleep 6
   adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null 2>&1 || true
   sleep 1

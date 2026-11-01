@@ -1,8 +1,8 @@
-# Renewly
+# Duedial
 
 **An offline Android app that tracks your subscriptions and reminds you before you're charged.**
 
-Netflix renews on the 15th, ₹649, on your HDFC card ending 4821. Renewly keeps that list, works out every next payment for you, and shows what you spend each month. Your data never leaves your phone: the app has **no internet permission**, no account, no ads and no tracking.
+Netflix renews on the 15th, ₹649, on your HDFC card ending 4821. Duedial keeps that list, works out every next payment for you, and shows what you spend each month. Your data never leaves your phone: the app has **no internet permission**, no account, no ads and no tracking.
 
 <p>
   <img src="docs/screenshots/home.png" width="230" alt="Home screen with monthly total and upcoming payments">
@@ -13,13 +13,15 @@ Netflix renews on the 15th, ₹649, on your HDFC card ending 4821. Renewly keeps
 
 ## Install
 
-1. Open **[Releases](../../releases/latest)** on your phone and download `Renewly-x.y.z.apk`.
+1. Open **[Releases](../../releases/latest)** on your phone and download `Duedial-x.y.z.apk`.
 2. Open the file. If Android asks, allow your browser or Files app to **install unknown apps**.
 3. If Play Protect warns about an unknown developer, tap **More details → Install anyway**. The app isn't on the Play Store, so Google doesn't know it yet.
 
 Requires Android 8.0 or newer. Updates install over the old version and keep your data.
 
-**Samsung Galaxy phones (One UI 6 and later):** if the install is blocked, **Auto Blocker** is on. Go to **Settings → Security and privacy → Auto Blocker**, turn it off, install Renewly, then turn it back on.
+**Coming from Renewly?** Duedial is the same app under a new name, and it installs alongside the old one. In Renewly, open **Settings → Export**, then in Duedial open **Settings → Import** and choose that file. Then uninstall Renewly.
+
+**Samsung Galaxy phones (One UI 6 and later):** if the install is blocked, **Auto Blocker** is on. Go to **Settings → Security and privacy → Auto Blocker**, turn it off, install Duedial, then turn it back on.
 
 ## Features
 
@@ -36,7 +38,7 @@ Requires Android 8.0 or newer. Updates install over the old version and keep you
 - Any billing period: weekly, monthly, every 3 or 6 months, yearly, or custom (every 10 days, every 2 years, …)
 - **Next payment**, **last payment** and **paid so far**, all worked out from the first payment date
 - Month ends handled correctly: 31 Jan → 28 Feb → 31 Mar
-- **Cancelled but still active**: set an end date and Renewly stops counting payments after it
+- **Cancelled but still active**: set an end date and Duedial stops counting payments after it
 - **Shared plans**: split the cost between 2 to 6 people and every total uses your share
 - **Discounts**: add the regular price to see how much you save
 - Payment method: a card nickname and its last 4 digits. Full card numbers are never stored
@@ -65,7 +67,7 @@ Requires Android 8.0 or newer. Updates install over the old version and keep you
 
 ## Reminders on Samsung phones
 
-Samsung's battery saving can delay background work. In Renewly, open **Settings → Open app settings → Battery → Unrestricted**, and make sure Renewly isn't listed under **Sleeping apps** (Settings → Battery → Background usage limits).
+Samsung's battery saving can delay background work. In Duedial, open **Settings → Open app settings → Battery → Unrestricted**, and make sure Duedial isn't listed under **Sleeping apps** (Settings → Battery → Background usage limits).
 
 ## Privacy
 
@@ -90,7 +92,7 @@ Kotlin · Jetpack Compose · Material 3 · Room · WorkManager
 | Screenshots | Taken by a robot: GitHub Actions boots an Android emulator, opens the app with sample data and saves these images |
 
 ```
-app/src/main/java/com/rachitratnammudaliar/renewly/
+app/src/main/java/com/rachitratnammudaliar/duedial/
   domain/     billing periods, payment dates, money, categories, brands
   data/       Room database, custom icons, settings
   reminders/  daily check and notifications

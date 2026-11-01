@@ -7,34 +7,34 @@ plugins {
 
 // Release signing: a private key from GitHub Actions secrets if present,
 // otherwise the committed public build key (see signing/README.md).
-val privateKeystorePath: String? = System.getenv("RENEWLY_KEYSTORE_PATH")
+val privateKeystorePath: String? = System.getenv("DUEDIAL_KEYSTORE_PATH")
 val hasPrivateKey = !privateKeystorePath.isNullOrBlank() && file(privateKeystorePath).exists()
 
 android {
-    namespace = "com.rachitratnammudaliar.renewly"
+    namespace = "com.rachitratnammudaliar.duedial"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.rachitratnammudaliar.renewly"
+        applicationId = "com.rachitratnammudaliar.duedial"
         minSdk = 26
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         targetSdk = 34
-        versionCode = (System.getenv("RENEWLY_VERSION_CODE") ?: "1").toInt()
-        versionName = System.getenv("RENEWLY_VERSION_NAME") ?: "1.0.0"
+        versionCode = (System.getenv("DUEDIAL_VERSION_CODE") ?: "1").toInt()
+        versionName = System.getenv("DUEDIAL_VERSION_NAME") ?: "1.0.0"
     }
 
     signingConfigs {
         create("release") {
             if (hasPrivateKey) {
                 storeFile = file(privateKeystorePath!!)
-                storePassword = System.getenv("RENEWLY_KEYSTORE_PASSWORD")
-                keyAlias = System.getenv("RENEWLY_KEY_ALIAS")
-                keyPassword = System.getenv("RENEWLY_KEY_PASSWORD")
+                storePassword = System.getenv("DUEDIAL_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("DUEDIAL_KEY_ALIAS")
+                keyPassword = System.getenv("DUEDIAL_KEY_PASSWORD")
             } else {
                 storeFile = rootProject.file("signing/public-release.jks")
-                storePassword = "renewly-public"
-                keyAlias = "renewly"
-                keyPassword = "renewly-public"
+                storePassword = "duedial-public"
+                keyAlias = "duedial"
+                keyPassword = "duedial-public"
             }
         }
     }

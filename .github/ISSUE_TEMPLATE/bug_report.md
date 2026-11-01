@@ -17,6 +17,6 @@ labels: bug
 **Phone**
 - Model (e.g. Samsung Galaxy A36):
 - Android version:
-- Renewly version (Settings, at the bottom):
+- Duedial version (Settings, at the bottom):
 
 Please don't include card numbers or other private details.

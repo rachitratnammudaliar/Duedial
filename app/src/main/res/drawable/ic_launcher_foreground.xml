@@ -1,20 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- A renewal arrow around a calendar dot. Safe zone is the centre 66dp of 108dp. -->
+<!-- Duedial: a dial whose needle points to the next due date. Safe zone is the centre 66dp of 108dp. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- Dial ring -->
     <path
-        android:pathData="M54,33 A21,21 0 1,1 35.8,43.5"
+        android:pathData="M54,32 A22,22 0 1,1 53.99,32"
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="6"
-        android:strokeLineCap="round"
+        android:strokeWidth="5"
         android:fillColor="#00000000" />
+    <!-- Ticks at 12, 3, 6 and 9 -->
     <path
-        android:pathData="M28.5,36.5 L42.5,36.8 L36.2,49.4 Z"
-        android:fillColor="#FFFFFF" />
+        android:pathData="M54,38.5 L54,42.5 M69.5,54 L65.5,54 M54,69.5 L54,65.5 M38.5,54 L42.5,54"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round" />
+    <!-- Needle towards two o'clock -->
     <path
-        android:pathData="M54,54 m-6,0 a6,6 0 1,0 12,0 a6,6 0 1,0 -12,0"
+        android:pathData="M54,54 L64.5,43.5"
+        android:strokeColor="#FFB5A0"
+        android:strokeWidth="4.5"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M54,54 m-4.5,0 a4.5,4.5 0 1,0 9,0 a4.5,4.5 0 1,0 -9,0"
         android:fillColor="#FFB5A0" />
 </vector>
