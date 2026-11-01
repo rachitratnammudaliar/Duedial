@@ -1,8 +1,8 @@
 # Duedial
 
-**An offline Android app that tracks your subscriptions and reminds you before you're charged.**
+**An offline subscription tracker for Android and iPhone that reminds you before you're charged.**
 
-Netflix renews on the 15th, ₹649, on your HDFC card ending 4821. Duedial keeps that list, works out every next payment for you, and shows what you spend each month. Your data never leaves your phone: the app has **no internet permission**, no account, no ads and no tracking.
+Netflix renews on the 15th, ₹649, on your HDFC card ending 4821. Duedial keeps that list, works out every next payment for you, and shows what you spend each month. Your data never leaves your device: no internet, no account, no ads and no tracking.
 
 <p>
   <img src="docs/screenshots/home.png" width="230" alt="Home screen with monthly total and upcoming payments">
@@ -13,15 +13,38 @@ Netflix renews on the 15th, ₹649, on your HDFC card ending 4821. Duedial keeps
 
 ## Install
 
-1. Open **[Releases](../../releases/latest)** on your phone and download `Duedial-x.y.z.apk`.
-2. Open the file. If Android asks, allow your browser or Files app to **install unknown apps**.
-3. If Play Protect warns about an unknown developer, tap **More details → Install anyway**. The app isn't on the Play Store, so Google doesn't know it yet.
+Download from **[Releases](../../releases/latest)**. Duedial isn't in any app store yet, so your phone asks you to confirm the first time.
 
-Requires Android 8.0 or newer. Updates install over the old version and keep your data.
+| Device | File | Requires |
+|---|---|---|
+| Android | `Duedial-x.y.z-Android.apk` | Android 8.0+ |
+| iPhone, iPad | `Duedial-x.y.z-iOS.ipa` | iOS 16+, installed with a sideloading tool |
 
-**Coming from Renewly?** Duedial is the same app under a new name, and it installs alongside the old one. In Renewly, open **Settings → Export**, then in Duedial open **Settings → Import** and choose that file. Then uninstall Renewly.
+<details>
+<summary><b>Android</b></summary>
 
-**Samsung Galaxy phones (One UI 6 and later):** if the install is blocked, **Auto Blocker** is on. Go to **Settings → Security and privacy → Auto Blocker**, turn it off, install Duedial, then turn it back on.
+1. Download the APK on your phone and open it. If Android asks, allow your browser or Files app to **install unknown apps**.
+2. If Play Protect warns about an unknown developer, tap **More details → Install anyway**.
+3. **Samsung Galaxy (One UI 6+):** if the install is blocked, turn off **Settings → Security and privacy → Auto Blocker**, install, then turn it back on.
+
+Updates install over the old version and keep your data.
+</details>
+
+<details>
+<summary><b>iPhone and iPad</b></summary>
+
+Apple only allows apps from the App Store or apps signed with an Apple ID, so the `.ipa` is installed with a free sideloading tool:
+
+1. On a Windows PC or Mac, install **[Sideloadly](https://sideloadly.io)** or **[AltStore](https://altstore.io)**.
+2. Connect your iPhone, drag in `Duedial-x.y.z-iOS.ipa`, and sign in with your Apple ID.
+3. On the iPhone, open **Settings → General → VPN & Device Management**, tap your Apple ID and choose **Trust**. On iOS 16+, also turn on **Settings → Privacy & Security → Developer Mode**.
+
+With a free Apple ID the app must be refreshed every 7 days (AltStore does this automatically). Your data stays on the phone when you refresh.
+</details>
+
+**Moving between phones:** Android and iPhone read the same backup file. Use **Settings → Export** on one phone and **Settings → Import** on the other.
+
+**Coming from Renewly?** Duedial is the same app under a new name. In Renewly, open **Settings → Export**, then in Duedial open **Settings → Import** and choose that file.
 
 ## Features
 
@@ -60,10 +83,10 @@ Requires Android 8.0 or newer. Updates install over the old version and keep you
 - Before a payment: on the day, or 1, 2, 3 or 7 days before, or off
 - Before a free trial ends, with the last day to cancel
 - Before a free offer ends
-- Checked every morning on the phone, without any internet
+- Android checks every morning; iPhone schedules them ahead, so they arrive even when the app is closed
 
 **Backup**
-- Export to a JSON file you keep, and import it on a new phone. No cloud involved
+- Export to a JSON file you keep, and import it on a new phone, Android or iPhone. No cloud involved
 
 ## Reminders on Samsung phones
 
@@ -73,39 +96,36 @@ Samsung's battery saving can delay background work. In Duedial, open **Settings 
 
 | | |
 |---|---|
-| Internet | None. Every build fails if the app ever asks for internet access |
-| Storage | A private database on your phone |
-| Cloud backup | Disabled, so your data isn't copied to Google Drive |
+| Internet | None. The Android build fails if the app ever asks for internet access |
+| Storage | Only on your phone: a private database on Android, a file in the app's private storage on iPhone |
+| Cloud backup | Disabled on Android, so your data isn't copied to Google Drive |
 | Card data | Only a nickname and the last 4 digits |
 
 See [PRIVACY.md](PRIVACY.md).
 
 ## How it's built
 
-Kotlin · Jetpack Compose · Material 3 · Room · WorkManager
+| Platform | Built with |
+|---|---|
+| Android | Kotlin, Jetpack Compose, Material 3, Room, WorkManager |
+| iPhone, iPad | Swift and SwiftUI, a port of the same logic with the same unit tests |
 
 | | |
 |---|---|
-| Tests | Unit tests cover the payment-date maths, totals, money parsing, brand matching and backups |
-| Builds | Every push is tested and built by GitHub Actions; the build checks the APK has no internet permission |
-| Releases | Raising the number in `version.txt` publishes a new release with the APK automatically |
+| Tests | Unit tests cover payment dates, month ends, trials, free and lifetime plans, totals, money parsing, brand matching and backups. They run for Android and on an iPhone simulator for every change |
+| Releases | Raising the number in `version.txt` builds every version on GitHub Actions and publishes them together |
 | Screenshots | Taken by a robot: GitHub Actions boots an Android emulator, opens the app with sample data and saves these images |
 
 ```
-app/src/main/java/com/rachitratnammudaliar/duedial/
-  domain/     billing periods, payment dates, money, categories, brands
-  data/       Room database, custom icons, settings
-  reminders/  daily check and notifications
-  backup/     JSON export and import
-  ui/         Compose screens: home, details, add/edit, settings
+app/        Android app
+ios/        iPhone and iPad app (XcodeGen project)
 ```
 
 ### Build it yourself
 
-Requires JDK 17 and the Android SDK.
-
 ```bash
-./gradlew testDebugUnitTest assembleDebug
+./gradlew :app:assembleDebug            # Android (JDK 17 and Android SDK)
+cd ios && xcodegen generate && open Duedial.xcodeproj   # iOS (macOS with Xcode 15+)
 ```
 
 ## Licence

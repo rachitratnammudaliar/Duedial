@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.0
+
+Duedial is now on iPhone and iPad.
+
+- **iPhone and iPad:** a native app with the same features and reminders scheduled even when the app is closed
+- Backups move between Android and iPhone: export on one, import on the other
+
 ## 1.2.0
 
 - Renewly is now **Duedial**, with a new dial icon
