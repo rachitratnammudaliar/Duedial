@@ -80,12 +80,13 @@ fun statusLine(s: Subscription, today: LocalDate): Line {
 /** The big number on the right of a list row, and the small line under it. */
 fun priceLabels(s: Subscription, today: LocalDate): Pair<String, String> {
     val share = Money.format(s.shareMinor(), s.currency)
-    val split = if (s.splitCount > 1) " · your share" else ""
+    val split = (if (s.splitCount > 1) " · your share" else "") +
+        if (!s.includeInMonthly && s.status(today) in setOf(Status.UPCOMING, Status.ENDING, Status.TRIAL)) " · not counted" else ""
     return when (s.planTypeValue()) {
         PlanType.FREE -> "Free" to (s.regularAmountMinor?.let { "normally ${Money.format(it, s.currency)}" } ?: "")
         PlanType.LIFETIME -> share to "once"
         PlanType.TRIAL -> if (s.status(today) == Status.TRIAL || s.status(today) == Status.TRIAL_CANCELLED) {
-            "Free" to "then $share"
+            "Free" to "then $share" + if (s.includeInMonthly) "" else " · not counted"
         } else {
             share to s.period().label + split
         }

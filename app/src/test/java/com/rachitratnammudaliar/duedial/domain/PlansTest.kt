@@ -28,8 +28,8 @@ class PlansTest {
     fun monthlyBillDefaults() {
         assertTrue(Plans.defaultIncludeInMonthly(PlanType.RECURRING, BillingPeriod.MONTHLY))
         assertTrue(Plans.defaultIncludeInMonthly(PlanType.RECURRING, BillingPeriod.WEEKLY))
-        assertFalse(Plans.defaultIncludeInMonthly(PlanType.RECURRING, BillingPeriod.QUARTERLY))
-        assertFalse(Plans.defaultIncludeInMonthly(PlanType.RECURRING, BillingPeriod.YEARLY))
+        assertTrue(Plans.defaultIncludeInMonthly(PlanType.RECURRING, BillingPeriod.QUARTERLY))
+        assertTrue(Plans.defaultIncludeInMonthly(PlanType.RECURRING, BillingPeriod.YEARLY))
         assertFalse(Plans.defaultIncludeInMonthly(PlanType.FREE, BillingPeriod.MONTHLY))
         assertFalse(Plans.defaultIncludeInMonthly(PlanType.LIFETIME, BillingPeriod.MONTHLY))
     }
@@ -124,10 +124,21 @@ class PlansTest {
     }
 
     @Test
-    fun dueThisMonthIgnoresTheToggle() {
-        val yearly = plan(amount = 149900, period = BillingPeriod.YEARLY, start = d(11, 20, 2025), include = false)
-        assertEquals(0, Plans.monthlyBillMinor(yearly, today))
-        assertEquals(149900, Plans.dueBetweenMinor(yearly, d(11, 1), d(11, 30)))
+    fun switchedOffIsLeftOutOfEveryTotal() {
+        // A monthly subscription switched off on its details page.
+        val off = plan(amount = 64900, start = d(1, 15), include = false)
+        assertEquals(0, Plans.monthlyBillMinor(off, today))
+        assertEquals(0, Plans.dueInTotalsMinor(off, d(11, 1), d(11, 30)))
+        assertEquals(64900, Plans.dueBetweenMinor(off, d(11, 1), d(11, 30)))
+
+        val yearly = plan(amount = 149900, period = BillingPeriod.YEARLY, start = d(11, 20, 2025))
+        assertEquals(12492, Plans.monthlyBillMinor(yearly, today))
+        assertEquals(149900, Plans.dueInTotalsMinor(yearly, d(11, 1), d(11, 30)))
+        assertEquals(0, Plans.dueInTotalsMinor(yearly.copy(includeInMonthly = false), d(11, 1), d(11, 30)))
+
+        // Lifetime purchases have no switch and count in the month they're paid.
+        val lifetime = plan(type = PlanType.LIFETIME, amount = 129900, start = d(11, 5), include = false)
+        assertEquals(129900, Plans.dueInTotalsMinor(lifetime, d(11, 1), d(11, 30)))
     }
 
     @Test

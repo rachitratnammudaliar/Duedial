@@ -60,10 +60,28 @@ data class Plan(
 
 object Plans {
 
-    /** Weekly and monthly plans count towards the monthly bill by default; longer ones don't. */
+    /**
+     * Every paid plan counts in the totals by default; longer plans are spread across months in the
+     * monthly bill. [period] is kept for callers but no longer changes the default.
+     */
+    @Suppress("UNUSED_PARAMETER")
     fun defaultIncludeInMonthly(type: PlanType, period: BillingPeriod): Boolean =
-        (type == PlanType.RECURRING || type == PlanType.TRIAL) &&
-            (period.unit == PeriodUnit.DAY || period.unit == PeriodUnit.WEEK || period.isMonthly)
+        type == PlanType.RECURRING || type == PlanType.TRIAL
+
+    /**
+     * Whether a plan's charges belong in the home screen totals at all. Switching off
+     * "Count in monthly bill" leaves a subscription out of every total. Lifetime purchases have no
+     * switch and always count in the month they're paid; free plans never cost anything.
+     */
+    fun countsInTotals(p: Plan): Boolean = when (p.type) {
+        PlanType.RECURRING, PlanType.TRIAL -> p.includeInMonthly
+        PlanType.LIFETIME -> true
+        PlanType.FREE -> false
+    }
+
+    /** Your share of what's charged between [from] and [to] that counts in the totals. */
+    fun dueInTotalsMinor(p: Plan, from: LocalDate, to: LocalDate): Long =
+        if (countsInTotals(p)) dueBetweenMinor(p, from, to) else 0
 
     /** Your share of each charge, after splitting. */
     fun shareMinor(p: Plan): Long =

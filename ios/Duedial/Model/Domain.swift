@@ -344,8 +344,23 @@ struct Plan {
 }
 
 enum Plans {
+    /// Every paid plan counts in the totals by default; longer plans are spread across months.
     static func defaultIncludeInMonthly(_ type: PlanType, _ period: BillingPeriod) -> Bool {
-        (type == .RECURRING || type == .TRIAL) && (period.unit == .DAY || period.unit == .WEEK || period.isMonthly)
+        type == .RECURRING || type == .TRIAL
+    }
+
+    /// Switching off "Count in monthly bill" leaves a subscription out of every total.
+    /// Lifetime purchases always count in the month they're paid; free plans never cost anything.
+    static func countsInTotals(_ p: Plan) -> Bool {
+        switch p.type {
+        case .RECURRING, .TRIAL: return p.includeInMonthly
+        case .LIFETIME: return true
+        case .FREE: return false
+        }
+    }
+
+    static func dueInTotalsMinor(_ p: Plan, _ from: Day, _ to: Day) -> Int64 {
+        countsInTotals(p) ? dueBetweenMinor(p, from, to) : 0
     }
 
     static func shareMinor(_ p: Plan) -> Int64 { divideRoundingHalfUp(p.amountMinor, Int64(max(p.split, 1))) }

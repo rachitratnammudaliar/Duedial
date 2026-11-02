@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.1
+
+- Fixed: a subscription with *Count in monthly bill* switched off still appeared in the *Due this month* total. It's now left out of both totals
+- The list marks subscriptions you don't count as *not counted*
+- New paid subscriptions of any length count by default; 3-month, 6-month and yearly plans are spread across months in the monthly bill
+
 ## 1.3.0
 
 Duedial is now on iPhone and iPad.

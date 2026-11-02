@@ -293,7 +293,7 @@ private fun SummaryCard(all: List<Subscription>, today: LocalDate, mode: TotalMo
         TotalMode.MONTHLY_BILL -> all.groupBy { it.currency }
             .mapValues { (_, l) -> l.sumOf { it.monthlyBillMinor(today) } }
         TotalMode.THIS_MONTH -> all.groupBy { it.currency }
-            .mapValues { (_, l) -> l.sumOf { Plans.dueBetweenMinor(it.toPlan(), monthStart, monthEnd) } }
+            .mapValues { (_, l) -> l.sumOf { Plans.dueInTotalsMinor(it.toPlan(), monthStart, monthEnd) } }
     }.filterValues { it > 0 }
 
     val running = all.filter { it.status(today) == Status.UPCOMING || it.status(today) == Status.ENDING }

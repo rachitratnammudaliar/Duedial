@@ -57,13 +57,14 @@ func statusLine(_ s: Subscription, _ today: Day) -> Line {
 /// The big number on the right of a list row, and the small line under it.
 func priceLabels(_ s: Subscription, _ today: Day) -> (String, String) {
     let share = Money.format(s.shareMinor, s.currency)
-    let split = s.splitCount > 1 ? " · your share" : ""
+    let st = s.status(today)
+    let notCounted = !s.includeInMonthly && (st == .upcoming || st == .ending || st == .trial) ? " · not counted" : ""
+    let split = (s.splitCount > 1 ? " · your share" : "") + notCounted
     switch s.type {
     case .FREE: return ("Free", s.regularAmountMinor.map { "normally \(Money.format($0, s.currency))" } ?? "")
     case .LIFETIME: return (share, "once")
     case .TRIAL:
-        let st = s.status(today)
-        if st == .trial || st == .trialCancelled { return ("Free", "then \(share)") }
+        if st == .trial || st == .trialCancelled { return ("Free", "then \(share)" + (s.includeInMonthly ? "" : " · not counted")) }
         return (share, s.period.label + split)
     case .RECURRING: return (share, s.period.label + split)
     }
@@ -87,7 +88,7 @@ enum TotalMode: String, CaseIterable, Identifiable {
     var description: String {
         self == .MONTHLY_BILL
             ? "Subscriptions you count in your bill; longer plans spread across months"
-            : "Everything actually charged this calendar month"
+            : "Charged this calendar month, from subscriptions you count"
     }
 }
 

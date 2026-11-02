@@ -125,7 +125,7 @@ struct SummaryCard: View {
         let start = today.firstOfMonth, end = today.lastOfMonth
         var totals: [String: Int64] = [:]
         for s in all {
-            let value = mode == .MONTHLY_BILL ? s.monthlyBillMinor(today) : Plans.dueBetweenMinor(s.plan, start, end)
+            let value = mode == .MONTHLY_BILL ? s.monthlyBillMinor(today) : Plans.dueInTotalsMinor(s.plan, start, end)
             totals[s.currency, default: 0] += value
         }
         let running = all.filter { $0.status(today) == .upcoming || $0.status(today) == .ending }

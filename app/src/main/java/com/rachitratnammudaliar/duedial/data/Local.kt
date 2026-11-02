@@ -58,7 +58,7 @@ object IconStore {
 /** How the total on the home screen is calculated. */
 enum class TotalMode(val label: String, val description: String) {
     MONTHLY_BILL("Monthly bill", "Subscriptions you count in your bill; longer plans spread across months"),
-    THIS_MONTH("Due this month", "Everything actually charged this calendar month"),
+    THIS_MONTH("Due this month", "Charged this calendar month, from subscriptions you count"),
 }
 
 enum class SortMode(val label: String) {

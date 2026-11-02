@@ -74,10 +74,10 @@ With a free Apple ID the app must be refreshed every 7 days (AltStore does this 
 **Totals**
 | Option | What it adds up |
 |---|---|
-| **Monthly bill** (default) | Everything switched to *Count in monthly bill*. Longer plans are divided: ₹1,499 a year adds ₹125 a month |
-| **Due this month** | What's actually charged in the current calendar month, whatever the switch says |
+| **Monthly bill** (default) | Every subscription you count, as a monthly amount. Longer plans are divided: ₹1,499 a year adds ₹125 a month |
+| **Due this month** | What's actually charged in the current calendar month, from subscriptions you count |
 
-*Count in monthly bill* is on by default for weekly and monthly plans and off for longer ones; change it per subscription. Trials join the bill only once they become paid. Free and lifetime plans are never in it. Different currencies are shown separately, never added together.
+*Count in monthly bill* is on by default for every paid subscription. Switch it off on a subscription's page to leave it out of both totals; the list then marks it *not counted*. Trials join the bill only once they become paid. Free and lifetime plans are never in it. Different currencies are shown separately, never added together.
 
 **Reminders**
 - Before a payment: on the day, or 1, 2, 3 or 7 days before, or off

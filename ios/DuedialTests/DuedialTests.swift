@@ -123,10 +123,17 @@ final class DuedialTests: XCTestCase {
         XCTAssertEqual(Plans.status(p, d(11, 15)), .ended)
     }
 
-    func testDueThisMonthIgnoresToggle() {
-        let yearly = plan(amount: 149900, period: .yearly, start: d(11, 20, 2025), include: false)
-        XCTAssertEqual(Plans.monthlyBillMinor(yearly, today), 0)
-        XCTAssertEqual(Plans.dueBetweenMinor(yearly, d(11, 1), d(11, 30)), 149900)
+    func testSwitchedOffIsLeftOutOfEveryTotal() {
+        let off = plan(amount: 64900, start: d(1, 15), include: false)
+        XCTAssertEqual(Plans.monthlyBillMinor(off, today), 0)
+        XCTAssertEqual(Plans.dueInTotalsMinor(off, d(11, 1), d(11, 30)), 0)
+
+        let yearly = plan(amount: 149900, period: .yearly, start: d(11, 20, 2025))
+        XCTAssertEqual(Plans.monthlyBillMinor(yearly, today), 12492)
+        XCTAssertEqual(Plans.dueInTotalsMinor(yearly, d(11, 1), d(11, 30)), 149900)
+
+        let lifetime = plan(type: .LIFETIME, amount: 129900, start: d(11, 5), include: false)
+        XCTAssertEqual(Plans.dueInTotalsMinor(lifetime, d(11, 1), d(11, 30)), 129900)
     }
 
     func testPausedCountsNothing() {
