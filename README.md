@@ -2,6 +2,8 @@
 
 **An offline subscription tracker for Android and iPhone that reminds you before you're charged.**
 
+🌐 **[rachitratnammudaliar.github.io/Duedial](https://rachitratnammudaliar.github.io/Duedial/)**
+
 Netflix renews on the 15th, ₹649, on your HDFC card ending 4821. Duedial keeps that list, works out every next payment for you, and shows what you spend each month. Your data never leaves your device: no internet, no account, no ads and no tracking.
 
 <p>
